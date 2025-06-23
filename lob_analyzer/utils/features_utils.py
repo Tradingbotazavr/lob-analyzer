@@ -1,6 +1,9 @@
 from decimal import Decimal, getcontext
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List, Deque
 import math
+import statistics
+import numpy as np
+import pandas as pd
 
 getcontext().prec = 12
 
@@ -97,4 +100,83 @@ def calculate_price_roc(prev_price: Optional[float], curr_price: Optional[float]
     """Считает скорость изменения цены (Price Rate of Change)."""
     if prev_price is None or curr_price is None or prev_price == 0:
         return 0.0
-    return (curr_price - prev_price) / prev_price 
+    return (curr_price - prev_price) / prev_price
+
+def calculate_book_imbalance(
+    bids: List[Tuple[float, float]],
+    asks: List[Tuple[float, float]],
+    depth: int = 50
+) -> Tuple[float, float, float]:
+    """
+    Вычисляет дисбаланс объёмов между bids и asks на глубине depth.
+    Возвращает (imbalance, bid_volume, ask_volume).
+
+    imbalance = (bid_volume - ask_volume) / (bid_volume + ask_volume), если сумма > 0, иначе 0.
+    """
+    bid_volume = sum(qty for _, qty in bids[:depth])
+    ask_volume = sum(qty for _, qty in asks[:depth])
+    total = bid_volume + ask_volume
+    imbalance = (bid_volume - ask_volume) / total if total > 0 else 0.0
+    return imbalance, bid_volume, ask_volume
+
+def calculate_ma_volume(volume_history: Deque[float]) -> float:
+    """
+    Рассчитывает скользящее среднее объёма за заданный период,
+    где volume_history — коллекция объёмов последних N событий.
+    """
+    if not volume_history:
+        return 0.0
+    return sum(volume_history) / len(volume_history)
+
+def calculate_price_volatility(price_history: Deque[float]) -> float:
+    """
+    Вычисляет волатильность как стандартное отклонение последних цен.
+    """
+    if len(price_history) < 2:
+        return 0.0
+    try:
+        return statistics.stdev(price_history)
+    except statistics.StatisticsError:
+        return 0.0
+
+def calculate_trade_flow_metrics(trades: pd.DataFrame) -> dict:
+    """
+    Вычисляет базовые метрики торгового потока.
+
+    trades: pd.DataFrame с колонками ['price', 'qty', 'side', 'ts']
+        side: 'buy' или 'sell'
+    """
+    if trades.empty:
+        return {
+            'buy_volume': 0.0,
+            'sell_volume': 0.0,
+            'volume_ratio': 0.0,
+            'trade_count': 0,
+            'buy_count': 0,
+            'sell_count': 0,
+            'imbalance': 0.0,
+        }
+
+    buy_trades = trades[trades['side'] == 'buy']
+    sell_trades = trades[trades['side'] == 'sell']
+
+    buy_volume = buy_trades['qty'].sum()
+    sell_volume = sell_trades['qty'].sum()
+    total_volume = buy_volume + sell_volume
+
+    buy_count = len(buy_trades)
+    sell_count = len(sell_trades)
+    total_count = buy_count + sell_count
+
+    volume_ratio = buy_volume / sell_volume if sell_volume > 0 else np.inf
+    imbalance = (buy_volume - sell_volume) / total_volume if total_volume > 0 else 0.0
+
+    return {
+        'buy_volume': float(buy_volume),
+        'sell_volume': float(sell_volume),
+        'volume_ratio': float(volume_ratio),
+        'trade_count': total_count,
+        'buy_count': buy_count,
+        'sell_count': sell_count,
+        'imbalance': float(imbalance),
+    }
