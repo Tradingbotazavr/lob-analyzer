@@ -45,10 +45,12 @@ class TradeActivityAnalyzer:
         The event is a dictionary-representation of a FeatureSnapshot.
         """
         # Логируем, что анализатор получил событие и какие признаки в нем есть
+        entropy = event.get('orderbook_entropy')
+        spoofing = event.get('is_spoofing_like')
         logger.info(
             f"ANALYZER | Received event with ts={event.get('ts'):.2f}, "
-            f"entropy={event.get('orderbook_entropy'):.3f}, "
-            f"spoofing={event.get('is_spoofing_like')}"
+            f"entropy={entropy:.3f}" if entropy is not None else "entropy=None, "
+            f"spoofing={spoofing}"
         )
         
         # Основная логика детекции аномалий остается, но использует готовые признаки
@@ -71,6 +73,13 @@ class TradeActivityAnalyzer:
         volume_exceeded = total_volume > self.volume_threshold
 
         if spike or imbalance or volume_exceeded:
+            # Приоритет: spike > imbalance > volume_exceeded
+            if spike:
+                event['reason'] = 'spike'
+            elif imbalance:
+                event['reason'] = 'imbalance'
+            elif volume_exceeded:
+                event['reason'] = 'volume_exceeded'
             # Все необходимые данные уже есть в event, который является словарем от FeatureSnapshot.
             # Просто передаем его дальше.
             spike_data = event
@@ -87,4 +96,4 @@ class TradeActivityAnalyzer:
                     f"ACTIVITY SPIKE: {event.get('reason')} | "
                     f"Direction: {event.get('direction')} | "
                     f"Total Vol: {total_volume:.2f}"
-                ) 
+                )

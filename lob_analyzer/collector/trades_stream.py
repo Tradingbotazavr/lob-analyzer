@@ -18,7 +18,12 @@ class TradeEvent:
     symbol: str
 
     def to_dict(self):
-        return asdict(self)
+        d = asdict(self)
+        d['ts'] = float(d.get('ts', 0))
+        d['price'] = float(d.get('price', 0))
+        d['qty'] = float(d.get('qty', 0))
+        d['side'] = 'buy' if d.get('side') == 'buy' else 'sell'
+        return d
 
 
 class TradesStream:

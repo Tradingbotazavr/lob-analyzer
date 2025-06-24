@@ -65,10 +65,10 @@ class FeatureSnapshot:
     imbalance: float = 0.0
     buy_vol_speed: Optional[float] = None
     sell_vol_speed: Optional[float] = None
-    price_std: Optional[float] = None
+    price_std: float = 0.0
     ma_volume: Optional[float] = None
     volatility: Optional[float] = None
-    activity_spike: Optional[int] = None
+    activity_spike: float = 0.0
 
     # 🔽 Новые признаки для манипуляций и глубины стакана
     bid_volume_pct_025: Optional[float] = None  # TODO: вычислять в stream_merger.py
@@ -98,4 +98,10 @@ class FeatureSnapshot:
         if self.direction is not None and not isinstance(self.direction, str):
             self.direction = str(self.direction)
         if self.reason is not None and not isinstance(self.reason, str):
-            self.reason = str(self.reason) 
+            self.reason = str(self.reason)
+
+    def __getitem__(self, key):
+        """
+        Позволяет обращаться к FeatureSnapshot как к dict: snapshot['price']
+        """
+        return getattr(self, key)

@@ -93,6 +93,14 @@ class RealTimeOrderBook:
             'ask_volume_near': ask_volume_near
         }
 
+    def get_top_bids_asks(self, depth: int = 50):
+        """
+        Returns the top bids and asks as sorted lists limited by the given depth.
+        """
+        bids = sorted(self.bids.items(), reverse=True)[:depth]
+        asks = sorted(self.asks.items())[:depth]
+        return bids, asks
+
     def _update_from_message(self, data: dict):
         """Updates the order book with data from a WebSocket message."""
         self.last_update_ts = data.get('E')  # 'E' is the event time
