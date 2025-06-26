@@ -14,9 +14,9 @@ async def main():
     merger = StreamMerger(
         symbol=symbol,
         output_dir="data/output",
-        merge_interval=0.1,          # как было
+        merge_interval=0.3,          # как было
         horizon_sec=10,              # быстрый target
-        save_interval_seconds=10     # быстрое сохранение
+        save_interval_seconds=30     # быстрое сохранение
     )
     trades = TradesStream(symbol=symbol)
     orderbook = RealTimeOrderBook(symbol=symbol)
